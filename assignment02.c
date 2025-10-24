@@ -22,10 +22,10 @@ int is_prime(int x) {
 
 long long count_primes_range(int a, int b) {
     long long c = 0;
-    for (int k = a; k <= b; ++k) {
+    for (int k = a; k <= b; ++k) 
         c += is_prime(k);
-        return c;
-    }
+    return c;
+    
 }
 
 void r1_worker(void) {
@@ -40,7 +40,7 @@ void r1_worker(void) {
         int start = payload[0];
         int end = payload[1];
         long long part = count_primes_range(start, end);
-
+        printf("Processed [%d - %d] and found %lld primes\n", start, end, part);
         MPI_Send(&part, 1, MPI_LONG_LONG, 0, RESULT, MPI_COMM_WORLD);
     }
 }
@@ -64,7 +64,7 @@ void r1_master(int N, int CHUNK, int P) {
         int payload[2] = { start, end };
         MPI_Send(payload, 2, MPI_INT, next_worker, WORK, MPI_COMM_WORLD);
         
-        //printf("Sending [%d - %d] to worker %d\n", start, end, next_worker);
+        printf("Sending [%d - %d] to worker %d\n", start, end, next_worker);
 
         next_worker++;
         if (next_worker == P) 
@@ -81,8 +81,10 @@ void r1_master(int N, int CHUNK, int P) {
     }
 
     // Tell all workers to stop
-    for (int w = 1; w < P; ++w)
+    for (int w = 1; w < P; ++w) {
         MPI_Send(NULL, 0, MPI_INT, w, STOP, MPI_COMM_WORLD);
+        printf("Sending [STOP] to worker %d\n", w);
+    }
 
     double t1 = MPI_Wtime();
 
@@ -97,8 +99,9 @@ void r1_master(int N, int CHUNK, int P) {
     }
 
     // Final summary
+    printf("\nR1: N=%d, P=%d, CHUNK=%d\n", N, P, CHUNK);
     printf("total primes = %lld\n", total);
-    printf("elapsed time = %.6fs\n", t1 - t0);
+    printf("elapsed time = %.6fs\n\n", t1 - t0);
 }
 
 static void r2_worker(void) {
@@ -117,6 +120,8 @@ static void r2_worker(void) {
         int start = payload[0];
         int end = payload[1];
         long long part = count_primes_range(start, end);
+
+        printf("Processed [%d - %d] and found %lld primes\n", start, end, part);
 
         MPI_Send(&part, 1, MPI_LONG_LONG, 0, RESULT, MPI_COMM_WORLD);
     }
@@ -154,9 +159,11 @@ static void r2_master(int N, int CHUNK, int P) {
                 int payload[2] = {start, end};
                 MPI_Send(payload, 2, MPI_INT, st.MPI_SOURCE, WORK, MPI_COMM_WORLD);
                 next = end + 1;
+                printf("Sending [%d - %d] to worker %d\n", start, end, st.MPI_SOURCE);
             } else {
                 MPI_Send(NULL, 0, MPI_INT, st.MPI_SOURCE, STOP, MPI_COMM_WORLD);
                 active_workers--;
+                printf("Sending [STOP] to worker %d\n", st.MPI_SOURCE);
             }
         }
     }
@@ -171,8 +178,9 @@ static void r2_master(int N, int CHUNK, int P) {
             printf("Correctness passed.\n");
     }
 
+    printf("\nR2: N=%d, P=%d, CHUNK=%d\n", N, P, CHUNK);
     printf("total primes = %lld\n", total);
-    printf("elapsed time = %.7fs\n", t1 - t0);
+    printf("elapsed time = %.7fs\n\n", t1 - t0);
 }
 
 
